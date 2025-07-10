@@ -1,6 +1,6 @@
-import express from "express";
+import express, { Request, Response } from "express";
 import { createServer } from "http";
-import { Server as SocketIOServer } from "socket.io";
+import { Server as SocketIOServer, Socket } from "socket.io";
 import path from "path";
 
 const app = express();
@@ -11,12 +11,12 @@ const rooms = new Map<string, string[]>();
 
 app.use(express.static(path.join(__dirname, "public")));
 
-app.get("/", (req, res) => {
+app.get("/", (req: Request, res: Response) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-io.on("connection", (socket) => {
-  socket.on("join-room", ({ roomId }) => {
+io.on("connection", (socket: Socket) => {
+  socket.on("join-room", ({ roomId }: { roomId: string }) => {
     if (!rooms.has(roomId)) rooms.set(roomId, []);
     const peers = rooms.get(roomId)!;
 
@@ -30,15 +30,15 @@ io.on("connection", (socket) => {
     (socket as any).roomId = roomId;
   });
 
-  socket.on("relay-sdp", ({ peerId, sessionDescription }) => {
+  socket.on("relay-sdp", ({ peerId, sessionDescription }: { peerId: string, sessionDescription: any }) => {
     io.to(peerId).emit("session-description", { peerId: socket.id, sessionDescription });
   });
 
-  socket.on("relay-ice", ({ peerId, iceCandidate }) => {
+  socket.on("relay-ice", ({ peerId, iceCandidate }: { peerId: string, iceCandidate: any }) => {
     io.to(peerId).emit("ice-candidate", { peerId: socket.id, iceCandidate });
   });
 
-  socket.on("chat-message", ({ roomId, message }) => {
+  socket.on("chat-message", ({ roomId, message }: { roomId: string, message: string }) => {
     socket.to(roomId).emit("chat-message", { sender: socket.id, message });
   });
 
